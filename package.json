@@ -16,6 +16,6 @@
     "test": "npm run test --workspace packages/game-engine"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": "20.x"
   }
 }
