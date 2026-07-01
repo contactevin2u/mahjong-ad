@@ -80,14 +80,32 @@ shopRouter.post("/checkout", requireAuth, async (req: AuthedRequest, res) => {
  */
 shopRouter.post(
   "/billplz/callback",
-  raw({ type: "application/x-www-form-urlencoded" }),
+  // Parse ANY content-type as a raw buffer so we see exactly what Billplz posts.
+  raw({ type: () => true }),
   async (req, res) => {
-    const params = Object.fromEntries(
-      new URLSearchParams(req.body.toString("utf8"))
-    ) as Record<string, string>;
+    let params: Record<string, string> = {};
+    if (Buffer.isBuffer(req.body)) {
+      params = Object.fromEntries(
+        new URLSearchParams(req.body.toString("utf8"))
+      ) as Record<string, string>;
+    } else if (req.body && typeof req.body === "object") {
+      params = req.body as Record<string, string>;
+    }
 
-    if (!verifyCallbackSignature(params)) {
-      console.warn("Billplz callback: bad signature");
+    const sigOk = verifyCallbackSignature(params);
+    console.log(
+      "[billplz callback] keys:",
+      Object.keys(params).join(","),
+      "| id:",
+      params.id,
+      "| paid:",
+      params.paid,
+      "| signature valid:",
+      sigOk
+    );
+
+    if (!sigOk) {
+      console.warn("[billplz callback] bad signature for bill", params.id);
       return res.status(400).send("bad signature");
     }
 
@@ -116,10 +134,13 @@ shopRouter.post(
 async function creditOrderForBill(billId: string) {
   const order = await prisma.paymentOrder.findUnique({ where: { billId } });
   if (!order) {
-    console.warn(`callback for unknown bill ${billId}`);
+    console.warn(`[billplz callback] no order found for bill ${billId}`);
     return;
   }
-  if (order.status === "PAID") return; // already credited
+  if (order.status === "PAID") {
+    console.log(`[billplz callback] bill ${billId} already credited`);
+    return;
+  }
 
   // Flip to PAID atomically; only the first flip proceeds to credit.
   const flipped = await prisma.paymentOrder.updateMany({
@@ -128,13 +149,16 @@ async function creditOrderForBill(billId: string) {
   });
   if (flipped.count === 0) return; // someone else credited concurrently
 
-  await applyCoinDelta({
+  const wallet = await applyCoinDelta({
     userId: order.userId,
     delta: order.coins,
     type: "TOPUP",
     reference: billId,
     note: `Top-up ${order.packageId}`,
   });
+  console.log(
+    `[billplz callback] credited ${order.coins} coins to user ${order.userId}; new balance ${wallet.balance}`
+  );
 }
 
 /**
@@ -142,11 +166,13 @@ async function creditOrderForBill(billId: string) {
  * result). Does NOT credit — crediting only happens via the callback above.
  */
 shopRouter.get("/billplz/verify-return", (req, res) => {
-  const query = req.query as Record<string, string>;
+  const query = req.query as Record<string, any>;
+  // Express parses billplz[...] into a nested object.
+  const billplz = (query?.billplz ?? {}) as Record<string, string>;
   const ok = verifyRedirectSignature(query);
   res.json({
     valid: ok,
-    paid: ok && query["billplz[paid]"] === "true",
-    billId: query["billplz[id]"] ?? null,
+    paid: ok && billplz.paid === "true",
+    billId: billplz.id ?? null,
   });
 });
