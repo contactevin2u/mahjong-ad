@@ -10,6 +10,7 @@ import { authRouter } from "./routes/auth.js";
 import { walletRouter } from "./routes/wallet.js";
 import { shopRouter } from "./routes/shop.js";
 import { playRouter } from "./routes/play.js";
+import { gameRouter } from "./routes/game.js";
 import { registerSockets } from "./sockets.js";
 
 const app = express();
@@ -29,13 +30,14 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.get("/health", (_req, res) =>
-  res.json({ ok: true, service: "mahjong-server", build: "billplz-sig-fix-2" })
+  res.json({ ok: true, service: "mahjong-server", build: "phase3-singleplayer" })
 );
 
 app.use("/auth", authRouter);
 app.use("/wallet", walletRouter);
 app.use("/shop", shopRouter);
 app.use("/play", playRouter);
+app.use("/game", gameRouter);
 
 const server = http.createServer(app);
 const io = new IOServer(server, {
