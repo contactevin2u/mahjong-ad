@@ -64,7 +64,7 @@ export default function HomePage() {
       setShowNoCoins(true);
       return;
     }
-    alert("Tables open in the next update — your coins are ready to play! 🀄");
+    router.push("/play");
   }
 
   async function claimFreeDemo() {
@@ -140,12 +140,12 @@ export default function HomePage() {
         <TopUpPromo balance={balance} canPlay={canPlay} />
       )}
 
-      {/* Tables placeholder */}
+      {/* Modes */}
       <section className="rounded-xl border border-white/10 p-6 text-sm text-white/70">
-        <h2 className="mb-2 font-semibold text-white">Tables (coming soon)</h2>
+        <h2 className="mb-2 font-semibold text-white">Game modes</h2>
         <p>
-          Matchmaking and live tables arrive in the next phase. For now, create an
-          account, grab your free coins, and get ready for day one.
+          <span className="text-gold">▶ Single-player vs 3 bots</span> is live now —
+          stake coins, win 4× the pot. Real-time multiplayer tables are coming next.
         </p>
       </section>
 
