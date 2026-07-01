@@ -14,7 +14,8 @@ export function getSocket(): Socket {
   }
   socket = io(API_URL, {
     autoConnect: true,
-    withCredentials: true,
+    // No withCredentials: the socket authenticates via the handshake token,
+    // not cookies. Credentialed CORS on the polling XHR can fail in-browser.
     auth: { token: getToken() },
     // Start with polling and upgrade to WebSocket. This is the most compatible
     // path across proxies/hosts (WebSocket-only can fail to establish).
