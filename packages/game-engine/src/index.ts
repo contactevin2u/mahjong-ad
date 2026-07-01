@@ -4,3 +4,4 @@ export * from "./tiles.js";
 export * from "./rng.js";
 export * from "./wall.js";
 export * from "./win.js";
+export * from "./game.js";
