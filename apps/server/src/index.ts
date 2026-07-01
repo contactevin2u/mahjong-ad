@@ -9,6 +9,7 @@ import { env } from "./env.js";
 import { authRouter } from "./routes/auth.js";
 import { walletRouter } from "./routes/wallet.js";
 import { shopRouter } from "./routes/shop.js";
+import { playRouter } from "./routes/play.js";
 import { registerSockets } from "./sockets.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.get("/health", (_req, res) => res.json({ ok: true, service: "mahjong-server"
 app.use("/auth", authRouter);
 app.use("/wallet", walletRouter);
 app.use("/shop", shopRouter);
+app.use("/play", playRouter);
 
 const server = http.createServer(app);
 const io = new IOServer(server, {

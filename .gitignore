@@ -36,3 +36,6 @@ coverage/
 
 # Vercel
 .vercel
+
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json

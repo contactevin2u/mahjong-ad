@@ -17,6 +17,7 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
+  freeDemoUsed?: boolean;
 }
 
 interface AuthState {

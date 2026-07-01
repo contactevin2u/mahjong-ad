@@ -21,6 +21,9 @@ export function findPackage(id: string): CoinPackage | undefined {
   return COIN_PACKAGES.find((p) => p.id === id);
 }
 
+/** Free coins granted once per account via the one-time free demo. */
+export const FREE_DEMO_COINS = 100;
+
 /** Ensure a wallet row exists for a user; returns the wallet. */
 export async function ensureWallet(userId: string) {
   return prisma.wallet.upsert({

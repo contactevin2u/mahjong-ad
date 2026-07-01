@@ -47,7 +47,12 @@ authRouter.post("/register", async (req, res) => {
   res.cookie(REFRESH_COOKIE, signRefreshToken(user.id), refreshCookieOptions);
   res.status(201).json({
     accessToken,
-    user: { id: user.id, email: user.email, displayName: user.displayName },
+    user: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      freeDemoUsed: user.freeDemoUsed,
+    },
   });
 });
 
@@ -71,7 +76,12 @@ authRouter.post("/login", async (req, res) => {
   res.cookie(REFRESH_COOKIE, signRefreshToken(user.id), refreshCookieOptions);
   res.json({
     accessToken,
-    user: { id: user.id, email: user.email, displayName: user.displayName },
+    user: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      freeDemoUsed: user.freeDemoUsed,
+    },
   });
 });
 
@@ -97,7 +107,13 @@ authRouter.post("/logout", (_req, res) => {
 authRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, email: true, displayName: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+      createdAt: true,
+      freeDemoUsed: true,
+    },
   });
   if (!user) return res.status(404).json({ error: "Not found" });
   res.json({ user });
