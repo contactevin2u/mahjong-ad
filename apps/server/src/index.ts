@@ -30,7 +30,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.get("/health", (_req, res) =>
-  res.json({ ok: true, service: "mahjong-server", build: "phase3-singleplayer" })
+  res.json({ ok: true, service: "mahjong-server", build: "phase3-scoring" })
 );
 
 app.use("/auth", authRouter);

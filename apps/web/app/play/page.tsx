@@ -101,6 +101,22 @@ export default function PlayPage() {
                 ? "Draw — stake refunded."
                 : "You lost this hand."}
             </p>
+            {game.result!.youWon && game.result!.score && (
+              <div className="mt-2 text-sm text-white/70">
+                <div className="font-medium text-gold">
+                  {game.result!.score.tai} tai · {2 + game.result!.score.tai}× stake
+                </div>
+                {game.result!.score.parts.length > 0 && (
+                  <div className="mt-1 flex flex-wrap justify-center gap-1">
+                    {game.result!.score.parts.map((p, i) => (
+                      <span key={i} className="rounded-full bg-black/30 px-2 py-0.5">
+                        {p.name} +{p.tai}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

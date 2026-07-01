@@ -20,6 +20,8 @@ import {
   legalConcealedKongs,
   claimOptionsFor,
   redactFor,
+  scoreWin,
+  Score,
   GameState,
   Seat,
   Tile,
@@ -62,7 +64,13 @@ function humanOptions(state: GameState, seat: Seat) {
   return { kind: "wait" as const };
 }
 
-function resultOf(entry: GameEntry, settle: { payout: number; balance: number | null } | null) {
+interface Settlement {
+  payout: number;
+  balance: number | null;
+  score: Score | null;
+}
+
+function resultOf(entry: GameEntry, settle: Settlement | null) {
   if (entry.state.phase !== "ended") return null;
   return {
     ended: true,
@@ -71,10 +79,11 @@ function resultOf(entry: GameEntry, settle: { payout: number; balance: number | 
     youWon: entry.state.winner === entry.humanSeat,
     payout: settle?.payout ?? 0,
     balance: settle?.balance ?? null,
+    score: settle?.score ?? null,
   };
 }
 
-function viewFor(entry: GameEntry, settle: { payout: number; balance: number | null } | null = null) {
+function viewFor(entry: GameEntry, settle: Settlement | null = null) {
   return {
     gameId: entry.id,
     stake: entry.stake,
@@ -84,16 +93,23 @@ function viewFor(entry: GameEntry, settle: { payout: number; balance: number | n
   };
 }
 
-/** Pay out a finished game exactly once. */
-async function settleIfEnded(
-  entry: GameEntry
-): Promise<{ payout: number; balance: number | null } | null> {
+/** Pay out a finished game exactly once. Payout scales with tai: win pays
+ * stake * (2 + tai); draw refunds the stake; a loss pays nothing. */
+async function settleIfEnded(entry: GameEntry): Promise<Settlement | null> {
   if (entry.state.phase !== "ended" || entry.settled) return null;
   entry.settled = true;
 
   const won = entry.state.winner === entry.humanSeat;
   const draw = entry.state.winner === null;
-  const payout = won ? entry.stake * 4 : draw ? entry.stake : 0;
+
+  let score: Score | null = null;
+  let payout = 0;
+  if (won) {
+    score = scoreWin(entry.state, entry.humanSeat);
+    payout = entry.stake * (2 + score.tai);
+  } else if (draw) {
+    payout = entry.stake;
+  }
 
   if (payout > 0) {
     const wallet = await applyCoinDelta({
@@ -101,12 +117,12 @@ async function settleIfEnded(
       delta: payout,
       type: won ? "WIN" : "BONUS",
       reference: entry.id,
-      note: won ? "Single-player win" : "Draw refund",
+      note: won ? `Single-player win (${score?.tai ?? 0} tai)` : "Draw refund",
     });
-    return { payout, balance: wallet.balance };
+    return { payout, balance: wallet.balance, score };
   }
   const w = await ensureWallet(entry.userId);
-  return { payout, balance: w.balance };
+  return { payout, balance: w.balance, score };
 }
 
 const startSchema = z.object({ stake: z.number().int() });

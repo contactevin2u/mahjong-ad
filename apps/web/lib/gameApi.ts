@@ -32,6 +32,11 @@ export type Options =
   | { kind: "claims"; claims: ClaimOption[] }
   | { kind: "wait" };
 
+export interface Score {
+  tai: number;
+  parts: { name: string; tai: number }[];
+}
+
 export interface GameResult {
   ended: boolean;
   winner: number | null;
@@ -39,6 +44,7 @@ export interface GameResult {
   youWon: boolean;
   payout: number;
   balance: number | null;
+  score: Score | null;
 }
 
 export interface GameResponse {
