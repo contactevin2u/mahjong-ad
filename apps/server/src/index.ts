@@ -28,7 +28,9 @@ app.use(cookieParser());
 // is required to verify the X-Signature over the exact submitted form.
 app.use(express.json());
 
-app.get("/health", (_req, res) => res.json({ ok: true, service: "mahjong-server" }));
+app.get("/health", (_req, res) =>
+  res.json({ ok: true, service: "mahjong-server", build: "billplz-sig-fix-2" })
+);
 
 app.use("/auth", authRouter);
 app.use("/wallet", walletRouter);
