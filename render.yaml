@@ -14,9 +14,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: mahjong-db
-          property: connectionString
+        sync: false # paste a Postgres connection string (your existing free Render DB, or a Neon DB)
       - key: JWT_SECRET
         generateValue: true
       - key: CLIENT_ORIGIN
@@ -32,6 +30,7 @@ services:
       - key: BILLPLZ_COLLECTION_ID
         sync: false
 
-databases:
-  - name: mahjong-db
-    plan: free
+# NOTE: The database is intentionally NOT created by this blueprint (Render allows
+# only one free database per account). Provide DATABASE_URL above by pasting the
+# connection string of an existing Postgres database (your current free Render DB,
+# or a free Neon database).
