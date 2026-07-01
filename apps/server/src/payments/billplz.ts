@@ -58,13 +58,15 @@ export async function createBill(p: CreateBillParams): Promise<BillplzBill> {
 }
 
 /**
- * Compute the Billplz X-Signature: sort keys ascending, concatenate `keyvalue`
- * pairs joined with `|`, then HMAC-SHA256 with the X-Signature key.
+ * Compute the Billplz X-Signature. Per Billplz: build a `keyvalue` string for
+ * each pair, SORT THE RESULTING STRINGS ascending, join with `|`, then
+ * HMAC-SHA256 with the X-Signature key. (Sorting the concatenated strings — not
+ * the keys — matters for prefix keys like paid / paid_amount / paid_at.)
  */
 function computeSignature(pairs: Record<string, string>): string {
   const source = Object.keys(pairs)
-    .sort()
     .map((k) => `${k}${pairs[k]}`)
+    .sort()
     .join("|");
   return crypto
     .createHmac("sha256", env.BILLPLZ_XSIGNATURE_KEY)
@@ -93,21 +95,32 @@ export function verifyCallbackSignature(body: Record<string, string>): boolean {
 /**
  * Verify a browser REDIRECT (return_url) query. Billplz sends keys as
  * `billplz[id]`, `billplz[paid]`, `billplz[paid_at]`, `billplz[x_signature]`.
- * The signature source uses the keys prefixed with `billplz`.
+ * The signature source uses the keys prefixed with `billplz` (e.g. `billplzid`).
+ *
+ * Express (qs) parses `billplz[id]=..` into a NESTED object
+ * `query.billplz = { id, paid, paid_at, x_signature }`, so read that; fall back
+ * to flat `billplz[...]` keys just in case.
  */
-export function verifyRedirectSignature(query: Record<string, string>): boolean {
+export function verifyRedirectSignature(query: Record<string, any>): boolean {
   const pairs: Record<string, string> = {};
   let signature = "";
-  for (const [rawKey, value] of Object.entries(query)) {
-    const m = rawKey.match(/^billplz\[(.+)\]$/);
-    if (!m) continue;
-    const inner = m[1];
-    if (inner === "x_signature") {
-      signature = value;
-    } else {
-      pairs[`billplz${inner}`] = value;
+
+  const nested = query?.billplz;
+  if (nested && typeof nested === "object") {
+    for (const [inner, value] of Object.entries(nested)) {
+      if (inner === "x_signature") signature = String(value);
+      else pairs[`billplz${inner}`] = String(value);
+    }
+  } else {
+    for (const [rawKey, value] of Object.entries(query ?? {})) {
+      const m = rawKey.match(/^billplz\[(.+)\]$/);
+      if (!m) continue;
+      const inner = m[1];
+      if (inner === "x_signature") signature = String(value);
+      else pairs[`billplz${inner}`] = String(value);
     }
   }
+
   if (!signature) return false;
   const expected = computeSignature(pairs);
   return timingSafeEqualHex(expected, signature);
