@@ -22,6 +22,9 @@ export function getSocket(): Socket {
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
+    // Free-tier servers sleep and can take ~50s to wake; give the first
+    // connection room to survive a cold start instead of erroring out.
+    timeout: 60000,
   });
   return socket;
 }
