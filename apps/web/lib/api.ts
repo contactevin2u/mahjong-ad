@@ -1,6 +1,13 @@
 // Thin REST client for the game server.
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// .trim() guards against a stray space in NEXT_PUBLIC_API_URL: fetch() tolerates
+// leading whitespace (it normalizes URLs) but Socket.IO does not, which would
+// make the socket dial " https://…" -> "%20https" -> ERR_NAME_NOT_RESOLVED.
+// Also strip any trailing slash so `${API_URL}${path}` never doubles up.
+export const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+)
+  .trim()
+  .replace(/\/+$/, "");
 
 const TOKEN_KEY = "mj_access_token";
 
