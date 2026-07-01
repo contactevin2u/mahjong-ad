@@ -5,3 +5,4 @@ export * from "./rng.js";
 export * from "./wall.js";
 export * from "./win.js";
 export * from "./game.js";
+export * from "./bot.js";
