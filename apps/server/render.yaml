@@ -1,0 +1,38 @@
+# Render blueprint for the mahjong game server.
+# In Render: New + → Blueprint → point at this repo. Fill secret env values in
+# the dashboard (they are marked sync:false below).
+services:
+  - type: web
+    name: mahjong-server
+    runtime: node
+    plan: starter
+    # Build from the repo root so npm workspaces resolve @mahjong/game-engine.
+    rootDir: .
+    buildCommand: npm install && npm run prisma:generate --workspace apps/server && npm run build --workspace apps/server && npm run prisma:deploy --workspace apps/server
+    startCommand: npm run start --workspace apps/server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mahjong-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false # set to your Vercel URL
+      - key: SERVER_PUBLIC_URL
+        sync: false # set to this service's public URL
+      - key: BILLPLZ_BASE_URL
+        value: https://www.billplz-sandbox.com/api
+      - key: BILLPLZ_API_KEY
+        sync: false
+      - key: BILLPLZ_XSIGNATURE_KEY
+        sync: false
+      - key: BILLPLZ_COLLECTION_ID
+        sync: false
+
+databases:
+  - name: mahjong-db
+    plan: basic-256mb

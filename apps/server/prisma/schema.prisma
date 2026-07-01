@@ -1,0 +1,74 @@
+// Prisma schema — users, wallets, transactions, and payment orders.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  wallet       Wallet?
+  transactions Transaction[]
+  orders       PaymentOrder[]
+}
+
+/// One wallet per user. Balance is in whole COINS (integer). Never fractional.
+model Wallet {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+enum TransactionType {
+  TOPUP // coins purchased via Billplz
+  SPEND // entry fee / stake into a game
+  WIN   // payout from a game
+  ADMIN // manual adjustment / refund
+}
+
+/// Immutable ledger of every coin movement.
+model Transaction {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id])
+  userId    String
+  type      TransactionType
+  amount    Int // signed: positive = credit, negative = debit
+  balance   Int // resulting wallet balance after this txn
+  reference String? // e.g. Billplz bill id or game id
+  note      String?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+/// A Billplz top-up order. `billId` is the idempotency guard for crediting coins.
+model PaymentOrder {
+  id         String      @id @default(cuid())
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  packageId  String // which coin package was bought
+  coins      Int // coins to grant on success
+  amountCents Int // MYR amount in cents charged
+  billId     String?     @unique // Billplz bill id
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  paidAt     DateTime?
+
+  @@index([userId, createdAt])
+}
