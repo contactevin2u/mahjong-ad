@@ -7,11 +7,21 @@ let socket: Socket | null = null;
 
 /** Get (or lazily create) the authenticated socket connection. */
 export function getSocket(): Socket {
-  if (socket) return socket;
+  if (socket) {
+    // Keep the auth token fresh in case it changed since creation.
+    socket.auth = { token: getToken() };
+    return socket;
+  }
   socket = io(API_URL, {
     autoConnect: true,
+    withCredentials: true,
     auth: { token: getToken() },
-    transports: ["websocket"],
+    // Start with polling and upgrade to WebSocket. This is the most compatible
+    // path across proxies/hosts (WebSocket-only can fail to establish).
+    transports: ["polling", "websocket"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
   });
   return socket;
 }

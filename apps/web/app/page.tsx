@@ -27,18 +27,28 @@ export default function HomePage() {
       return;
     }
     const socket = getSocket();
-    const onWelcome = () => setConnected(true);
+    const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
-    socket.on("lobby:welcome", onWelcome);
+    const onError = (err: Error) => {
+      console.error("socket connect_error:", err.message);
+      setConnected(false);
+    };
+    socket.on("connect", onConnect);
+    socket.on("lobby:welcome", onConnect);
     socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onError);
+    if (socket.connected) setConnected(true);
+    if (!socket.connected) socket.connect();
 
     api<{ balance: number }>("/wallet")
       .then((r) => setBalance(r.balance))
       .catch(() => setBalance(null));
 
     return () => {
-      socket.off("lobby:welcome", onWelcome);
+      socket.off("connect", onConnect);
+      socket.off("lobby:welcome", onConnect);
       socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onError);
     };
   }, [user]);
 
